@@ -486,7 +486,6 @@
         showAlert(`成功新增工具類別：${newTool.name} (${count}個)`);
       };
 
-      // --- 刪除物料功能 ---
       const handleDeleteMaterial = (id, name) => {
         showConfirm(`確定要刪除物料「${name}」嗎？`, () => {
           setInventory(prev => prev.filter(item => item.id !== id));
@@ -494,7 +493,6 @@
         });
       };
 
-      // --- 刪除工具功能 ---
       const handleDeleteTool = (id, name) => {
         showConfirm(`確定要刪除工具類別「${name}」嗎？`, () => {
           setTools(prev => prev.filter(tool => tool.id !== id));
@@ -722,7 +720,7 @@
             ))}
           </nav>
 
-          {/* 新增物料 Modal (附取消按鈕) */}
+          {/* 新增物料 Modal (紅色 X 與紅色取消按鈕) */}
           {showAddMaterialModal && (
             <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
               <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
@@ -733,7 +731,7 @@
                     </span>
                     新增物料品項
                   </h3>
-                  <button onClick={() => setShowAddMaterialModal(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                  <button onClick={() => setShowAddMaterialModal(false)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition">
                     <Icon name="x" size={20} />
                   </button>
                 </div>
@@ -794,7 +792,7 @@
                   <div className="flex gap-3 mt-4">
                     <button 
                       onClick={() => setShowAddMaterialModal(false)}
-                      className="flex-1 py-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                      className="flex-1 py-4 rounded-xl font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition"
                     >
                       取消
                     </button>
@@ -810,7 +808,7 @@
             </div>
           )}
 
-          {/* 新增工具 Modal (附取消按鈕) */}
+          {/* 新增工具 Modal (紅色 X 與紅色取消按鈕) */}
           {showAddToolModal && (
             <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
               <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
@@ -821,7 +819,7 @@
                     </span>
                     新增工具類別
                   </h3>
-                  <button onClick={() => setShowAddToolModal(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                  <button onClick={() => setShowAddToolModal(false)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition">
                     <Icon name="x" size={20} />
                   </button>
                 </div>
@@ -862,7 +860,7 @@
                   <div className="flex gap-3 mt-4">
                     <button 
                       onClick={() => setShowAddToolModal(false)}
-                      className="flex-1 py-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                      className="flex-1 py-4 rounded-xl font-bold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition"
                     >
                       取消
                     </button>
@@ -878,7 +876,7 @@
             </div>
           )}
 
-          {/* 進出貨表單 Modal */}
+          {/* 進出貨表單 Modal (紅色 X) */}
           {showActionModal && actionData && (
             <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
               <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
@@ -889,7 +887,7 @@
                     </span>
                     {actionData.type === 'in' ? '新增進貨' : '出貨領用'}
                   </h3>
-                  <button onClick={() => setShowActionModal(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                  <button onClick={() => setShowActionModal(false)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition">
                     <Icon name="x" size={20} />
                   </button>
                 </div>
@@ -942,7 +940,7 @@
             </div>
           )}
 
-          {/* 借用工具表單 Modal */}
+          {/* 借用工具表單 Modal (紅色 X) */}
           {showBorrowModal && borrowData && (
             <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
               <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
@@ -953,7 +951,7 @@
                     </span>
                     登記借用
                   </h3>
-                  <button onClick={() => setShowBorrowModal(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                  <button onClick={() => setShowBorrowModal(false)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition">
                     <Icon name="x" size={20} />
                   </button>
                 </div>
@@ -1008,7 +1006,7 @@
             </div>
           )}
 
-          {/* 系統設定 Modal */}
+          {/* 系統設定 Modal (紅色 X) */}
           {showSettings && (
             <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
               <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
@@ -1019,7 +1017,7 @@
                     </span>
                     系統連線設定
                   </h3>
-                  <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                  <button onClick={() => setShowSettings(false)} className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-full transition">
                     <Icon name="x" size={20} />
                   </button>
                 </div>
@@ -1058,7 +1056,7 @@
                   {messageBox.type === 'confirm' && (
                     <button
                       onClick={() => setMessageBox(null)}
-                      className="w-full bg-gray-100 text-gray-700 font-bold py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors"
+                      className="w-full bg-red-50 text-red-600 border border-red-200 font-bold py-3 px-4 rounded-xl hover:bg-red-100 transition-colors"
                     >
                       取消
                     </button>

@@ -13,7 +13,6 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 保留原本的 lucide 腳本，但我們將改變它的使用方式 -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body {
@@ -45,9 +44,6 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    // --- 【優化 1】Icon 渲染優化 ---
-    // 不再使用 lucide.createIcons() 進行全域 DOM 掃描。
-    // 改為直接呼叫 lucide 內建的 SVG 產生器，以字串形式安全地注入，效能極高。
     const Icon = ({ name, size = 24, className = "" }) => {
       const iconMeta = lucide.icons[name];
       if (!iconMeta) return null;
@@ -61,12 +57,8 @@
       return <span className={`inline-flex items-center justify-center ${className}`} dangerouslySetInnerHTML={{ __html: svgHtml }} />;
     };
 
-    // --- 【優化 2】將子元件從 App 內部抽離至全域 ---
-    // 透過 Props 傳遞資料，避免父元件更新導致子元件被強制卸載重繪
-
     const Dashboard = ({ setShowSettings, inventory, lowStockItems, borrowedToolsList, setActiveTab, history }) => (
       <div className="p-4 space-y-4 pb-24">
-        {/* Google Sheets 連線狀態指示燈 */}
         <div className="bg-green-50 border border-green-200 p-3 rounded-2xl flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2">
             <span className="relative flex h-3 w-3">
@@ -139,7 +131,7 @@
       </div>
     );
 
-    const Inventory = ({ searchQuery, setSearchQuery, filteredInventory, setActionData, setShowActionModal, showAlert }) => (
+    const Inventory = ({ searchQuery, setSearchQuery, filteredInventory, setActionData, setShowActionModal, setShowAddMaterialModal }) => (
       <div className="flex flex-col h-full pb-20">
         <div className="p-4 bg-white shadow-sm z-10 sticky top-0">
           <div className="relative">
@@ -187,15 +179,14 @@
         </div>
         <button 
           className="fixed bottom-24 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg active:scale-90 transition shadow-blue-500/30"
-          onClick={() => showAlert("目前為預覽模式，新增物料功能開發中")}
+          onClick={() => setShowAddMaterialModal(true)}
         >
           <Icon name="plus" size={28} />
         </button>
       </div>
     );
 
-    const Tools = ({ tools, borrowedToolsList, setBorrowData, setShowBorrowModal, showAlert, handleReturnTool }) => {
-      // 這裡的狀態會在切換頁籤時自然重置，是正常的 React 行為
+    const Tools = ({ tools, borrowedToolsList, setBorrowData, setShowBorrowModal, handleReturnTool, setShowAddToolModal }) => {
       const [toolTab, setToolTab] = useState('list');
       
       return (
@@ -247,7 +238,7 @@
                 })}
                 <button 
                   className="fixed bottom-24 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg active:scale-90 transition shadow-indigo-500/30"
-                  onClick={() => showAlert("目前為預覽模式，新增工具類別與數量功能開發中")}
+                  onClick={() => setShowAddToolModal(true)}
                 >
                   <Icon name="plus" size={28} />
                 </button>
@@ -330,7 +321,6 @@
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
 
-      // --- 資料狀態 ---
       const [inventory, setInventory] = useState([
         { id: 'M001', name: '水泥 (50kg)', quantity: 15, unit: '包', minStock: 5 },
         { id: 'M002', name: '紅磚', quantity: 350, unit: '塊', minStock: 100 },
@@ -354,7 +344,19 @@
         { id: 2, type: 'out', itemName: '矽利康 (透明)', amount: 2, date: '2026-08-26 14:15', note: 'B棟浴室修繕' },
       ]);
 
-      // --- UI 與設定狀態 ---
+      // --- 新增物料/工具的狀態 ---
+      const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+      const [newMatName, setNewMatName] = useState('');
+      const [newMatQty, setNewMatQty] = useState('');
+      const [newMatUnit, setNewMatUnit] = useState('包');
+      const [newMatMin, setNewMatMin] = useState('5');
+
+      const [showAddToolModal, setShowAddToolModal] = useState(false);
+      const [newToolName, setNewToolName] = useState('');
+      const [newToolUnit, setNewToolUnit] = useState('台');
+      const [newToolCount, setNewToolCount] = useState('3');
+
+      // --- 現有 Modal 與互動狀態 ---
       const [showActionModal, setShowActionModal] = useState(false);
       const [actionData, setActionData] = useState(null);
       const [actionAmount, setActionAmount] = useState('');
@@ -373,21 +375,15 @@
       const showAlert = (message) => setMessageBox({ type: 'alert', message });
       const showConfirm = (message, onConfirm) => setMessageBox({ type: 'confirm', message, onConfirm });
 
-      
-      const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwLIUHk2mxlP6MtegncUV7QQtabTsSwnAYBIgHvbsJRt_Wv3Yg8lttACMdNMONtAqQhgA/exec';
+      const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbzSm7Wu_suB92wUna4R3pxS4B-aL93g-ZBju4GS75VcuEJcKKfRhVF0KA--xiG0Kbx7EA/exec';
 
       const syncToGoogleSheets = (data) => {
         if (!googleSheetUrl) return;
-        
         fetch(googleSheetUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(data)
-        })
-        .then(response => {
-           console.log("已成功同步至 Google Sheets!");
-        })
-        .catch(err => console.error("Google Sheets 同步失敗:", err));
+        }).catch(err => console.error("Google Sheets 同步失敗:", err));
       };
 
       const exportToCSV = () => {
@@ -396,7 +392,6 @@
 
         history.forEach(record => {
           const action = record.type === 'in' ? '進貨' : '出貨';
-          // 加入 replace 解決引號跳脫的問題
           const safeNote = (record.note || '').replace(/"/g, '""');
           const row = ['物料', record.date, `"${record.itemName}"`, record.amount, action, `"${safeNote}"`, ''].join(",");
           csvContent += row + "\n";
@@ -422,6 +417,55 @@
         document.body.removeChild(link);
       };
 
+      // --- 新增物料提交邏輯 ---
+      const handleAddMaterialSubmit = () => {
+        if (!newMatName.trim()) return showAlert("請輸入物料名稱");
+        const qty = parseInt(newMatQty);
+        const min = parseInt(newMatMin);
+        if (isNaN(qty) || qty < 0) return showAlert("請輸入有效的初始庫存");
+
+        const newId = 'M' + String(inventory.length + 1).padStart(3, '0');
+        const newItem = {
+          id: newId,
+          name: newMatName.trim(),
+          quantity: qty,
+          unit: newMatUnit.trim() || '個',
+          minStock: isNaN(min) ? 5 : min
+        };
+
+        setInventory(prev => [...prev, newItem]);
+        setShowAddMaterialModal(false);
+        setNewMatName('');
+        setNewMatQty('');
+        showAlert(`成功新增物料：${newItem.name}`);
+      };
+
+      // --- 新增工具提交邏輯 ---
+      const handleAddToolSubmit = () => {
+        if (!newToolName.trim()) return showAlert("請輸入工具名稱");
+        const count = parseInt(newToolCount);
+        if (isNaN(count) || count <= 0) return showAlert("請輸入有效的數量");
+
+        const newId = 'T' + String(tools.length + 1).padStart(3, '0');
+        let itemsArr = [];
+        for (let i = 1; i <= count; i++) {
+          itemsArr.push({ itemNo: `${i}號`, status: 'available' });
+        }
+
+        const newTool = {
+          id: newId,
+          name: newToolName.trim(),
+          unit: newToolUnit.trim() || '支',
+          items: itemsArr
+        };
+
+        setTools(prev => [...prev, newTool]);
+        setShowAddToolModal(false);
+        setNewToolName('');
+        setNewToolCount('3');
+        showAlert(`成功新增工具類別：${newTool.name} (${count}個)`);
+      };
+
       const handleActionSubmit = () => {
         const amount = parseInt(actionAmount);
         if (!amount || amount <= 0) return showAlert("請輸入有效數量");
@@ -442,7 +486,6 @@
         const note = actionNote || (actionData.type === 'in' ? '一般進貨' : '一般出貨');
 
         setHistory(prev => [{
-          // 優化：避免 ID 衝突
           id: Date.now() + Math.random().toString(36).substring(2, 9),
           type: actionData.type,
           itemName: actionData.item.name,
@@ -539,7 +582,6 @@
         });
       };
 
-      // --- 衍生狀態計算 ---
       const lowStockItems = useMemo(() => inventory.filter(i => i.quantity <= i.minStock), [inventory]);
       const borrowedToolsList = useMemo(() => {
         let list = [];
@@ -606,7 +648,7 @@
                 filteredInventory={filteredInventory}
                 setActionData={setActionData}
                 setShowActionModal={setShowActionModal}
-                showAlert={showAlert}
+                setShowAddMaterialModal={setShowAddMaterialModal}
               />
             )}
             {activeTab === 'tools' && (
@@ -615,8 +657,8 @@
                 borrowedToolsList={borrowedToolsList}
                 setBorrowData={setBorrowData}
                 setShowBorrowModal={setShowBorrowModal}
-                showAlert={showAlert}
                 handleReturnTool={handleReturnTool}
+                setShowAddToolModal={setShowAddToolModal}
               />
             )}
             {activeTab === 'history' && <History history={history} />}
@@ -639,6 +681,136 @@
               </button>
             ))}
           </nav>
+
+          {/* 新增物料 Modal */}
+          {showAddMaterialModal && (
+            <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+              <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
+                      <Icon name="package-plus" size={24} />
+                    </span>
+                    新增物料品項
+                  </h3>
+                  <button onClick={() => setShowAddMaterialModal(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                    <Icon name="x" size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">物料名稱 <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                      placeholder="例如: PVC管 2吋、電纜線..."
+                      value={newMatName}
+                      onChange={(e) => setNewMatName(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">初始庫存量</label>
+                      <input 
+                        type="number" pattern="[0-9]*" inputMode="numeric"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition font-bold"
+                        placeholder="0"
+                        value={newMatQty}
+                        onChange={(e) => setNewMatQty(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">單位</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                        placeholder="包、支、捲、個..."
+                        value={newMatUnit}
+                        onChange={(e) => setNewMatUnit(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">最低庫存警戒值</label>
+                    <input 
+                      type="number" pattern="[0-9]*" inputMode="numeric"
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                      placeholder="低於此數量會紅字警告"
+                      value={newMatMin}
+                      onChange={(e) => setNewMatMin(e.target.value)}
+                    />
+                  </div>
+                  <button 
+                    onClick={handleAddMaterialSubmit}
+                    className="w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg active:scale-95 transition mt-4 bg-blue-600 shadow-blue-500/30"
+                  >
+                    確認新增物料
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 新增工具 Modal */}
+          {showAddToolModal && (
+            <div className="absolute inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+              <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-3xl p-6 pb-safe shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-indigo-100 text-indigo-600">
+                      <Icon name="wrench" size={24} />
+                    </span>
+                    新增工具類別
+                  </h3>
+                  <button onClick={() => setShowAddToolModal(false)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-2 rounded-full">
+                    <Icon name="x" size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">工具名稱 <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text" 
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                      placeholder="例如: 充電式鎚鑽、雷射水平儀..."
+                      value={newToolName}
+                      onChange={(e) => setNewToolName(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">總數量 (會自動編號)</label>
+                      <input 
+                        type="number" pattern="[0-9]*" inputMode="numeric"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition font-bold"
+                        placeholder="3"
+                        value={newToolCount}
+                        onChange={(e) => setNewToolCount(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">單位</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                        placeholder="支、台、把..."
+                        value={newToolUnit}
+                        onChange={(e) => setNewToolUnit(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleAddToolSubmit}
+                    className="w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg active:scale-95 transition mt-4 bg-indigo-600 shadow-indigo-500/30"
+                  >
+                    確認新增工具
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 進出貨表單 Modal */}
           {showActionModal && actionData && (

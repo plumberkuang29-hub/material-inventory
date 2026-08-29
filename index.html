@@ -19,7 +19,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
       background-color: #f3f4f6;
-      overflow: hidden; /* 防止整個網頁外層亂捲動 */
+      overflow: hidden;
     }
     .no-scrollbar::-webkit-scrollbar {
       display: none;
@@ -343,28 +343,60 @@
     function App() {
       const [activeTab, setActiveTab] = useState('dashboard');
 
-      const [inventory, setInventory] = useState([
-        { id: 'M001', name: '水泥 (50kg)', spec: '50kg', quantity: 15, unit: '包', minStock: 5 },
-        { id: 'M002', name: '紅磚', spec: '標準型', quantity: 350, unit: '塊', minStock: 100 },
-        { id: 'M003', name: '矽利康', spec: '透明', quantity: 3, unit: '支', minStock: 10 },
-      ]);
+      // --- 自動從手機記憶體讀取資料，如果沒有才用預設值 ---
+      const [inventory, setInventory] = useState(() => {
+        const saved = localStorage.getItem('app_inventory');
+        if (saved) {
+          try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        }
+        return [
+          { id: 'M001', name: '水泥 (50kg)', spec: '50kg', quantity: 15, unit: '包', minStock: 5 },
+          { id: 'M002', name: '紅磚', spec: '標準型', quantity: 350, unit: '塊', minStock: 100 },
+          { id: 'M003', name: '矽利康', spec: '透明', quantity: 3, unit: '支', minStock: 10 },
+        ];
+      });
 
-      const [tools, setTools] = useState([
-        { id: 'T001', name: '手推車', unit: '台', items: [
-          { itemNo: '1號', status: 'available' },
-          { itemNo: '2號', status: 'borrowed', borrower: '王大明', location: 'A棟3樓', borrowDate: '2026-08-25 09:30' }
-        ]},
-        { id: 'T002', name: '電動電鑽', unit: '把', items: [
-          { itemNo: '1號', status: 'available' },
-          { itemNo: '2號', status: 'available' },
-          { itemNo: '3號', status: 'available' }
-        ]}
-      ]);
+      const [tools, setTools] = useState(() => {
+        const saved = localStorage.getItem('app_tools');
+        if (saved) {
+          try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        }
+        return [
+          { id: 'T001', name: '手推車', unit: '台', items: [
+            { itemNo: '1號', status: 'available' },
+            { itemNo: '2號', status: 'borrowed', borrower: '王大明', location: 'A棟3樓', borrowDate: '2026-08-25 09:30' }
+          ]},
+          { id: 'T002', name: '電動電鑽', unit: '把', items: [
+            { itemNo: '1號', status: 'available' },
+            { itemNo: '2號', status: 'available' },
+            { itemNo: '3號', status: 'available' }
+          ]}
+        ];
+      });
 
-      const [history, setHistory] = useState([
-        { id: 1, type: 'in', itemName: '水泥 (50kg)', amount: 10, date: '2026-08-27 08:30', note: '進貨補充' },
-        { id: 2, type: 'out', itemName: '矽利康', amount: 2, date: '2026-08-26 14:15', note: 'B棟浴室修繕' },
-      ]);
+      const [history, setHistory] = useState(() => {
+        const saved = localStorage.getItem('app_history');
+        if (saved) {
+          try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        }
+        return [
+          { id: 1, type: 'in', itemName: '水泥 (50kg)', amount: 10, date: '2026-08-27 08:30', note: '進貨補充' },
+          { id: 2, type: 'out', itemName: '矽利康', amount: 2, date: '2026-08-26 14:15', note: 'B棟浴室修繕' },
+        ];
+      });
+
+      // --- 當資料改變時，自動寫入手機記憶體，重新整理也不會不見 ---
+      useEffect(() => {
+        localStorage.setItem('app_inventory', JSON.stringify(inventory));
+      }, [inventory]);
+
+      useEffect(() => {
+        localStorage.setItem('app_tools', JSON.stringify(tools));
+      }, [tools]);
+
+      useEffect(() => {
+        localStorage.setItem('app_history', JSON.stringify(history));
+      }, [history]);
 
       const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
       const [newMatName, setNewMatName] = useState('');
@@ -641,7 +673,6 @@
       return (
         <div className="h-screen w-full flex flex-col bg-gray-100 max-w-md mx-auto overflow-hidden relative">
           
-          {/* 上方固定標題列 */}
           <header className="bg-blue-600 text-white pt-safe-top pb-4 px-4 shadow-md z-20 flex justify-between items-end h-16 shrink-0 relative">
             <h1 className="text-xl font-black tracking-wider w-full text-center relative">
               {activeTab === 'dashboard' && '管理儀表板'}
@@ -668,7 +699,6 @@
             </button>
           </header>
 
-          {/* 中間可獨立捲動的主內容區 */}
           <main className="flex-1 overflow-hidden relative z-0">
             {activeTab === 'dashboard' && (
               <Dashboard 
@@ -705,7 +735,6 @@
             {activeTab === 'history' && <History history={history} />}
           </main>
 
-          {/* 下方固定導覽列 */}
           <nav className="bg-white border-t border-gray-200 flex justify-around items-center h-16 shrink-0 w-full safe-bottom z-20 shadow-[0_-5px_15px_-5px_rgba(0,0,0,0.1)] pb-safe">
             {[
               { id: 'dashboard', icon: 'layout-dashboard', label: '首頁' },
